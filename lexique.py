@@ -9,10 +9,10 @@ place_description = data['place_description']
 place_description_unique = place_description.drop_duplicates()
 
 with open("soliguide.html", "w", encoding="utf-8") as file:
-    file.write(place_description.iloc[500])
+    file.write(place_description_unique.iloc[1])
 
 
-soup = BeautifulSoup(place_description_unique.iloc[10], "html.parser")
+soup = BeautifulSoup(place_description_unique.iloc[1], "html.parser")
 text = soup.get_text()
 
 
@@ -48,7 +48,7 @@ def note_falc_avance(texte, sentence_length_thresh=15, uncommon_thresh=1e-6):
     total_words = 0
     total_uncommon = 0
     passive_count = 0
-    sub_clause_count, sub_clause_words = count_subordinates(doc)
+    sub_count, sub_words = count_subordinates(doc)
     
     for sent in sentences:
 
@@ -70,17 +70,17 @@ def note_falc_avance(texte, sentence_length_thresh=15, uncommon_thresh=1e-6):
     avg_sentence_length = total_words / nb_sentences
     uncommon_ratio = total_uncommon / total_words if total_words else 0
     passive_ratio = passive_count / nb_sentences
-    sub_clause_ratio = sub_clause_count / nb_sentences
+    sub_ratio = sub_count / nb_sentences
     
 
     score = 100
 
     if avg_sentence_length > sentence_length_thresh:
-        score -= (avg_sentence_length - sentence_length_thresh) * 1
+        score -= (avg_sentence_length - sentence_length_thresh) * 2
 
     score -= uncommon_ratio * 200
     score -= passive_ratio * 50
-    score -= sub_clause_ratio * 50
+    score -= sub_ratio * 50
     
     score = max(0, min(100, score))
 
@@ -90,10 +90,10 @@ def note_falc_avance(texte, sentence_length_thresh=15, uncommon_thresh=1e-6):
         "total_uncommon_words": total_uncommon,
         "uncommon": uncommon,
         "passive_sentences": passive_count,
-        "passive_sentences": passive_ratio,
-        "subordinate_clauses": sub_clause_count,
-        "subordinate_clauses": sub_clause_ratio,
-        "subordinate_clause_words": sub_clause_words,
+        "passive_sentences_ratio": passive_ratio,
+        "subordinate_clauses": sub_count,
+        "subordinate_clauses": sub_ratio,
+        "subordinate_clause_words": sub_words,
         
     }
     return score, details

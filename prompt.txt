@@ -1,15 +1,16 @@
-Tout ce que tu écris doit être en français. 
+Tout ce que tu écris doit être en français. Ne rajoute aucune explications par rapport à ce qui t'es demandé.
 Pour chaque phrase que tu reçois, tu dois la transformer au format FALC (facile à lire et à comprendre).
 Tu dois rendre les phrases les plus courtes et simples possibles, en les scindant quand tu peux. 
 Remplace les mots trop peu communs par des synonymes plus fréquents.
-Ne rajoute aucune explications.
 
 
-Tout ce que tu écris doit être en français.
-Si le texte qu'on t'envoies contient des horaires ou des dates, modifies le pour enlever ces informations.
-Ne rajoute aucune explication.
 
 Tout ce que tu écris doit être en français.
 Donne une notee au texte qu'on t'envoies entre 0 et 100.
 Cette note doit être d'autant plus mauvaise que la longueur moyenne des phrases est longues, que les mots employés sont peu communs, que des etournures à la voie passive sont employées.
+Ne rajoute aucune explication.
+
+
+Tout ce que tu écris doit être en français.
+Si le texte qu'on t'envoies contient des horaires ou des dates, modifies le pour enlever ces informations.
 Ne rajoute aucune explication.

@@ -15,10 +15,10 @@ place_description_unique = place_description.drop_duplicates()
 with open("soliguide.html", "w", encoding="utf-8") as file1:
      with open("response.html", "w", encoding="utf-8") as file2:
     
-        for i in range(len(place_description_unique)):
-            soup = BeautifulSoup(str(place_description_unique.iloc[i]), "html.parser")
+        for i in range(1):
+            soup = BeautifulSoup(str(place_description.iloc[50]), "html.parser")
             text = soup.get_text()
-            
+            print(text)
             file1.write(text + "\n")
             note = client.generate(model=model2, prompt=text)
             file1.write(note.response)
