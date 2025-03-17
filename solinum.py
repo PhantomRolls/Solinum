@@ -7,7 +7,7 @@ model1 = "llama3.1-FALC"
 model2 = "llama3.2-note"
 
 data = pd.read_csv("soliguide.csv", delimiter=';')
-data=data[:10]
+data=data[:600]
 place_description = data['place_description']
 
 place_description_unique = place_description.drop_duplicates()
