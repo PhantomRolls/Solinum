@@ -3,19 +3,18 @@ from wordfreq import word_frequency
 from bs4 import BeautifulSoup
 import pandas as pd
 
-data = pd.read_csv("soliguide.csv", delimiter=';')
-data=data[:600]
-place_description = data['place_description']
-place_description_unique = place_description.drop_duplicates()
+df = pd.read_csv("soliguide.csv", delimiter=';')
+df = df[:600]
+df = df.drop_duplicates(subset='place_id')
+place_description_unique = df[['place_description']]
+
+
+soup = BeautifulSoup(str(place_description_unique.iloc[1,0]), "html.parser").get_text()
+
 
 with open("soliguide.html", "w", encoding="utf-8") as file:
-    file.write(place_description_unique.iloc[1])
-
-
-soup = BeautifulSoup(place_description_unique.iloc[1], "html.parser")
-text = soup.get_text()
-
-
+    file.write(soup)
+    
 nlp = spacy.load("fr_core_news_sm")
 
 def is_passive_sentence(sent):
@@ -92,23 +91,30 @@ def note_falc_avance(texte, sentence_length_thresh=15, uncommon_thresh=1e-6):
         "passive_sentences": passive_count,
         "passive_sentences_ratio": passive_ratio,
         "subordinate_clauses": sub_count,
-        "subordinate_clauses": sub_ratio,
+        "subordinate_ratio": sub_ratio,
         "subordinate_clause_words": sub_words,
         
     }
     return score, details
 
-with open("texte_complexe.txt", "r", encoding="utf-8") as fichier:
-    texte_complexe = fichier.read()
 
-print(texte_complexe)
-score, details = note_falc_avance(texte_complexe)
+try:
+    with open("texte_complexe.txt", "r", encoding="utf-8") as fichier:
+        texte_complexe = fichier.read()
+except FileNotFoundError:
+    texte_complexe = ""
+    print("Le fichier 'texte_complexe.txt' n'a pas été trouvé.")
+
+
+print(soup)
+score, details = note_falc_avance(soup)
 print(f"Score FALC avancé : {score:.2f}/100")
 print("Détails de l'analyse :", details)
 
 print('o\no')
 
-print(text)
-score, details = note_falc_avance(text)
+
+print(texte_complexe)
+score, details = note_falc_avance(texte_complexe)
 print(f"Score FALC avancé : {score:.2f}/100")
 print("Détails de l'analyse :", details)

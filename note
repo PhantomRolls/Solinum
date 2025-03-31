@@ -1,11 +1,10 @@
 FROM llama3.1
 
 
-# set the temperature to 1 [higher is more creative, lower is more coherent]
 PARAMETER temperature 0
 
 
-# set the system message
+
 SYSTEM """
 Tu es un évaluateur expert en rédaction FALC (Facile À Lire et à Comprendre). Pour chaque texte que tu reçois, analyse s'il respecte les critères suivants :
 
