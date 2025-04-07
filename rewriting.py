@@ -62,7 +62,7 @@ for index, row in df_unique.head(10).iterrows():
 df_new_descriptions = pd.DataFrame(results)
 
 
-df_new_descriptions.to_csv("places_descriptions.csv", sep=",", index=False, encoding='utf-8')
+df_new_descriptions.to_csv("rewritting.csv", sep=",", index=False, encoding='utf-8')
 df_new_descriptions["new_description"] = '"' + df_new_descriptions["new_description"] + '"'
 
 print("\n✅ DataFrame généré :")

@@ -12,8 +12,6 @@ place_description_unique = df[['place_description']]
 soup = BeautifulSoup(str(place_description_unique.iloc[1,0]), "html.parser").get_text()
 
 
-with open("soliguide.html", "w", encoding="utf-8") as file:
-    file.write(soup)
     
 nlp = spacy.load("fr_core_news_sm")
 
