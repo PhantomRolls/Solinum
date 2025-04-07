@@ -13,7 +13,7 @@ results = []
 
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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"
+    api_key=""
 )
 
 

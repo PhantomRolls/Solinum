@@ -7,10 +7,10 @@ df = pd.read_csv("soliguide.csv", delimiter=';')
 df_unique = df.drop_duplicates(subset='service_name')
 services = df_unique['service_name'].dropna().tolist()
 
-# 2. Initialiser le client OpenRouter
+
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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"
+    api_key=""
 )
 
 # 3. Définir le prompt système
@@ -26,7 +26,7 @@ La description doit :
 results = []
 
 # 5. Générer les descriptions
-for service_name in services[:5]:  # ← change le nombre ici pour + ou moins de lignes
+for service_name in services[:5]:
     try:
         completion = client.chat.completions.create(
             model="meta-llama/llama-3.3-70b-instruct:free",
@@ -56,6 +56,6 @@ df_descriptions = pd.DataFrame(results)
 # 7. (Facultatif) Exporter le DataFrame
 df_descriptions.to_csv("services_descriptions.csv", index=False, encoding='utf-8')
 
-# 8. Afficher un aperçu
+
 print("\n✅ DataFrame généré :")
 print(df_descriptions.head())
