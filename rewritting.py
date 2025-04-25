@@ -25,7 +25,7 @@ Voici les consignes à suivre :
 - Ne rajoute aucun commentaires"""
 
 
-for index, row in df_unique.head(10).iterrows():
+for index, row in df_unique.head(1).iterrows():
 
     p_d = row['place_description']
     place_name = row['place_name'] if 'place_name' in row else f"Place_{index}"

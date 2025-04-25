@@ -1,66 +1,76 @@
+import re
 import pandas as pd
-import time
 from bs4 import BeautifulSoup
 import language_tool_python
 
-# Liste des règles à ignorer
-rules_to_ignore = [
-    # Ponctuation & typographie
-    "PUNCTUATION", "COMMA_PARENTHESIS_WHITESPACE", "COMMA_WHICH", "EN_QUOTES",
-    "UNPAIRED_BRACKETS", "OXFORD_COMMA", "UPPERCASE_SENTENCE_START",
-    "WHITESPACE_RULE", "DOUBLE_PUNCTUATION", "MULTIPLE_WHITESPACE",
-    "SPACE_AFTER_PERIOD", "FR.SPACE_AFTER_PERIOD", "SPACE_BEFORE_PERIOD",
-    "COMMA_COMPOUND_SENTENCE", "FRENCH_WHITESPACE", "FRENCH_QUOTES",
-    "FRENCH_WORD_CONTAINS_UNDERSCORE", "MORFOLOGIK_RULE_FR"
+# --- CONFIGURATION ---
+INPUT_CSV  = "soliguide.csv"
+OUTPUT_CSV = "correction_2.csv"
 
-]
+# Regex pour répétitions de mots et de lettres
+RE_REPEAT_WORDS   = re.compile(r'\b(\w+)(?:\s+\1\b)+', flags=re.IGNORECASE)
+RE_REPEAT_LETTERS = re.compile(r'(.)\1{2,}')
 
-# Charger le fichier CSV
-df = pd.read_csv("soliguide.csv", delimiter=';')
-df_unique = df.drop_duplicates(subset='place_id')
-
-# Initialiser LanguageTool pour le français
+# Initialise LanguageTool pour le français
 tool = language_tool_python.LanguageTool('fr')
 
-results = []
+# Pattern pour reconnaître un acronyme (2+ majuscules ou chiffres ou tirets)
+RE_ACRONYME = re.compile(r'^[A-Z0-9ÀÂÉÈÊÔÙÛÄËÏÖÜÇ\-]{2,}$')
 
-# Parcourir les premières lignes (modifiable)
-for index, row in df_unique.head(10).iterrows():
-    p_d = row['place_description']
-    place_name = row['place_name'] if 'place_name' in row else f"Place_{index}"
-    text_to_correct = BeautifulSoup(str(p_d), "html.parser").get_text()
+def analyse_texte(html_text: str) -> str:
+    # 1) Extraction du texte brut
+    text = BeautifulSoup(str(html_text), "html.parser").get_text(separator=" ")
 
-    try:
-        erreurs = tool.check(text_to_correct)
+    # 2) Vérification par LanguageTool
+    matches = tool.check(text)
+    ortho_msgs = []
+    for m in matches:
+        if m.ruleIssueType != 'misspelling':
+            continue
 
-        # Filtrage par règle et type
-        erreurs_filtrees = [
-            e for e in erreurs 
-            if e.ruleId not in rules_to_ignore and e.ruleIssueType != 'typographical'
-        ]
+        # Extrait le fragment exact signalé comme faute
+        erreur = text[m.offset : m.offset + m.errorLength]
 
-        if not erreurs_filtrees:
-            new_description = "Pas d'erreurs"
-        else:
-            fautes = [
-                f"{e.context.strip()} → {e.message}" 
-                for e in erreurs_filtrees
-            ]
-            new_description = " | ".join(fautes)
+        # Ignore si c'est un acronyme
+        if RE_ACRONYME.fullmatch(erreur):
+            continue
 
-    except Exception as e:
-        new_description = f"Erreur : {e}"
+        # Sinon, propose jusqu'à 5 suggestions
+        sugg = m.replacements[:5] or ["(aucune suggestion)"]
+        # On affiche le mot fautif plutôt que tout le contexte
+        ortho_msgs.append(f"{erreur} → {', '.join(sugg)}")
 
-    print(f"✔ {place_name} → {new_description}")
-    results.append({
-        "place_name": place_name,
-        "erreurs": new_description
-    })
+    # 3) Répétitions de mots
+    repet_mots = [g.group(0) for g in RE_REPEAT_WORDS.finditer(text)]
+    repet_mots_msgs = [f"Répétitions mot : «{r}»" for r in repet_mots]
 
-    time.sleep(0.3)  # Léger délai pour éviter surcharge
+    # 4) Répétitions de lettres (défrappe)
+    repet_lettres = [g.group(0) for g in RE_REPEAT_LETTERS.finditer(text)]
+    repet_lettres_msgs = [f"Répétitions lettres : «{r}»" for r in repet_lettres]
 
-# Exporter le résultat dans un CSV
-df_new_descriptions = pd.DataFrame(results)
-df_new_descriptions.to_csv("correction_2.csv", sep=",", index=False, encoding='utf-8')
+    toutes = ortho_msgs + repet_mots_msgs + repet_lettres_msgs
+    return " | ".join(toutes) if toutes else "Pas d'erreurs"
 
-print("✅ Fichier correction_2.csv généré avec succès.")
+def main():
+    df = pd.read_csv(INPUT_CSV, sep=';')
+    df = df.drop_duplicates(subset='place_id', keep='first').reset_index(drop=True)
+    df = df.head(5)
+    sorties = []
+    for _, row in df.iterrows():
+        pid  = row.get("place_id", "")
+        name = row.get("place_name", f"Place_{pid}")
+        desc = row.get("place_description", "")
+
+        erreurs = analyse_texte(desc)
+        sorties.append({
+            "place_id":   pid,
+            "place_name": name,
+            "erreurs":    erreurs
+        })
+
+    pd.DataFrame(sorties).to_csv(OUTPUT_CSV, index=False, encoding='utf-8-sig')
+    
+    print(f"✅ {OUTPUT_CSV} généré avec succès.")
+
+if __name__ == "__main__":
+    main()

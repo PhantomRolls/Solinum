@@ -1,11 +1,4 @@
-place_name,erreurs
-Le Refuge de Pantin,"...cueil de jour, d'une pension de famille et et d'un centre d'hébergement d'urgence. L'... → Un mot est répété."
-Hors la rue - centre d'appui aux maraudes,...treuil- De l'art-thérapie et un soutien psychologique → Un point est requis pour indiquer la fin de cette phrase.
-CAARUD PROSES Saint-Denis,"Le CAARUD (Centre d’Accueil et d’Accompagnement à... → Faute de frappe possible trouvée. | ...ueil et d’Accompagnement à la Réduction des Risque pour les Usagers de Drogues) PROSES est... → Le déterminant s’accorde avec le nom « Risque ». | ... tout dans un cadre anonyme confidentiel, et inconditionnel.L'accueil est anonyme, g... → La virgule doit être omise dans ce contexte. | ...anonyme confidentiel, et inconditionnel.L'accueil est anonyme, gratuit, et dit “à ... → Ajoutez une espace entre les phrases. | ...ions politiques, appartenance religieuse etc. → On met généralement une virgule devant « etc. »."
-CAARUD PROSES Montreuil,Le CAARUD (Centre d’Accueil et d’Accompagnement à... → Faute de frappe possible trouvée. | ...ueil et d’Accompagnement à la Réduction des Risque pour les Usagers de Drogues) PROSES est... → Le déterminant s’accorde avec le nom « Risque ».
-CAARUD Yucca,"Le CAARUD Yucca vise à accueillir et accompagner ... → Faute de frappe possible trouvée. | ... et leur situation sanitaire et sociale.L'accueil collectif est ouvert lundi, mard... → Ajoutez une espace entre les phrases. | ...és pour des ateliers pour les femmes Le CAARUD porte aussi le dispositif TAPAJ : Trava... → Faute de frappe possible trouvée. | ...mes Le CAARUD porte aussi le dispositif TAPAJ : Travail alternatif payé à la journée ... → Faute de frappe possible trouvée. | ...professionnel des jeunes entre 18 et 25 ansL'équipe du CAARUD effectue également des maraud... → Faute de frappe possible trouvée. | ...es jeunes entre 18 et 25 ansL'équipe du CAARUD effectue également des maraudes les apr... → Faute de frappe possible trouvée."
-CAARUD Aurore,"Le CAARUD (Centres d'Accueil et d'Accompagnement ... → Faute de frappe possible trouvée. | ...onditionnelle et anonyme des usagers de droguesIl accueille, informe et conseille les usa... → Faute de frappe possible trouvée. | ...ngues et petits matériels dans l'espace urbain → Un point est requis pour indiquer la fin de cette phrase."
-Toilettes publiques,nan → Faute de frappe possible trouvée.
-Toilettes publiques,nan → Faute de frappe possible trouvée.
-CMP Pantin,Pas d'erreurs
-Restos du Coeur - Centre d’activités d'Aubervilliers,Pas d'erreurs
+﻿place_id,place_name,erreurs
+5a58c0c7c1797fe45e3772bc,Le Refuge de Pantin,Répétitions mot : «et et»
+5a58c0c7c1797fe45e3772cf,Hors la rue - centre d'appui aux maraudes,": - →  –,  —, : "
+5a58c0c7c1797fe45e377312,CAARUD PROSES Saint-Denis,   →   |    →   |    →   |    →   |    →  

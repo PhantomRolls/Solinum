@@ -4,12 +4,11 @@ from bs4 import BeautifulSoup
 import pandas as pd
 
 df = pd.read_csv("soliguide.csv", delimiter=';')
-df = df[:600]
 df = df.drop_duplicates(subset='place_id')
 place_description_unique = df[['place_description']]
 
 
-soup = BeautifulSoup(str(place_description_unique.iloc[1,0]), "html.parser").get_text()
+soup = BeautifulSoup(str(place_description_unique.iloc[0,0]), "html.parser").get_text()
 
 
     

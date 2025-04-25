@@ -4,6 +4,15 @@ import time
 from bs4 import BeautifulSoup
 import json
 import spacy
+import sys
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+else:
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 # Charger le modèle spaCy français
 nlp = spacy.load("fr_core_news_sm")
@@ -12,10 +21,12 @@ nlp = spacy.load("fr_core_news_sm")
 df = pd.read_csv("soliguide.csv", delimiter=";")
 df_unique = df.drop_duplicates(subset="place_id")
 
+
+
 # Initialiser le client OpenRouter
 client = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key="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"
+    api_key=""
 )
 
 # Prompt système pour obtenir une réponse JSON structurée
@@ -34,7 +45,7 @@ Si aucune erreur n'est détectée, réponds : {"erreurs": []}"""
 results = []
 
 # Traiter chaque ligne du CSV
-for index, row in df_unique.head(5).iterrows():
+for index, row in df_unique.head(1).iterrows():
     place_name = row["place_name"] if "place_name" in row else f"Place_{index}"
     description = row.get("place_description", "")
     
@@ -60,6 +71,8 @@ for index, row in df_unique.head(5).iterrows():
                     {"role": "user", "content": sentence}
                 ]
             )
+            print(f"🔄 Phrase {i} analysée")
+            
             raw_response = completion.choices[0].message.content.strip()
             try:
                 json_data = json.loads(raw_response)
