@@ -6,25 +6,70 @@ import threading
 import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import re
+from PIL import Image, ImageTk  # Nécessite Pillow : pip install pillow
 
 # Mapping des noms courts vers les scripts Python
 PROGRAMS = {
-    "note": "note.py",
-    "correction llm": "correction_1.py",
-    "correction sans llm": "correction_2.py",
-    "réécriture": "rewritting.py",
-    "détection de mots suspects": "flags.py",
+    "Note": "note.py",
+    "Correction llm": "correction_1.py",
+    "Correction sans llm": "correction_2.py",
+    "Réécriture": "rewriting.py",
     "horaires": "horaires.py",
+    "Classification": "classification.py",
+    "Détection de mots suspects": "flags.py",
+    "tel-mail": "tel-mail.py",
+}
+
+# Descriptions des programmes
+PROGRAM_DESCRIPTIONS = {
+    "Note": "Attribue une note au texte vis-à-vis de sa simplicité",
+    "Correction llm": "Correction d'erreurs de frappe/grammaire",
+    "Correction sans llm": "Correction automatique sans IA",
+    "Réécriture": "Réécriture automatique du des descriptions en language simple",
+    "Détection de mots suspects": "Détection de termes problématiques",
+    "horaires": "Extraction des horaires, numéros et emails",
+    "Classification": "Détecte les services attribués dans les mauvaises catégories",
 }
 
 # Chemin vers flags.py pour la configuration
 FLAGS_PY = os.path.join(os.path.dirname(__file__), 'flags.py')
 
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        self.id = None
+        self.x = self.y = 0
+        self.widget.bind("<Enter>", self.showtip)
+        self.widget.bind("<Leave>", self.hidetip)
+
+    def showtip(self, event=None):
+        "Display text in tooltip window"
+        if self.tipwindow or not self.text:
+            return
+        x, y, _, _ = self.widget.bbox("insert")
+        x = x + self.widget.winfo_rootx() + 25
+        y = y + self.widget.winfo_rooty() + 25
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(True)
+        tw.wm_geometry(f"+{x}+{y}")
+        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
+                         background="#ffffe0", relief=tk.SOLID, borderwidth=1,
+                         font=("tahoma", "8", "normal"))
+        label.pack(ipadx=1)
+
+    def hidetip(self, event=None):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
+
 class ControllerGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Sélecteur de programmes")
-        self.geometry("600x450")
+        self.geometry("700x450")
 
         # --- Champ 'Nombre de lignes' ---
         frame_rows = ttk.Frame(self)
@@ -53,12 +98,32 @@ class ControllerGUI(tk.Tk):
             .pack(side=tk.LEFT, padx=(0,5))
         ttk.Button(frame_btn, text="Tout désélectionner", command=self.select_none)\
             .pack(side=tk.LEFT, padx=(0,5))
-        ttk.Button(frame_btn, text="Configurer Flags", command=self.configure_flags)\
+        ttk.Button(frame_btn, text="⚙️", command=self.configure_flags)\
             .pack(side=tk.RIGHT)
+        
+        # Info-bulle pour le bouton Configurer Flags
+        ToolTip(frame_btn.children['!button4'], 
+               "Configurer la liste des mots suspects à extraire")
 
         # --- Zone de log ---
         self.log = scrolledtext.ScrolledText(self, state='disabled', height=15)
         self.log.pack(fill=tk.BOTH, expand=True, padx=10, pady=(0,10))
+        
+                # --- Bouton info avec icône ---
+        try:
+            info_img = Image.open("fichiers_csv/info.jpg")  # ou renomme en "info.png"
+            info_img = info_img.resize((20, 20), Image.LANCZOS)
+
+            self.info_icon = ImageTk.PhotoImage(info_img)
+            info_btn = ttk.Button(self, image=self.info_icon, command=self.show_info)
+            info_btn.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
+            ToolTip(info_btn, "Informations détaillées sur les programmes")
+        except Exception as e:
+            print(f"Erreur chargement image info : {e}")
+
+
+
 
         # Flag pour ajouter horaires.py après flags.py
         self.run_horaires = False
@@ -68,6 +133,8 @@ class ControllerGUI(tk.Tk):
         chk = ttk.Checkbutton(self.frame_chk, text=name, variable=var)
         chk.pack(side=tk.LEFT, padx=5, pady=5)
         self.vars[name] = var
+        # Ajout de l'info-bulle
+        ToolTip(chk, PROGRAM_DESCRIPTIONS.get(name, "Pas de description disponible"))
 
     def select_all(self):
         for v in self.vars.values():
@@ -101,8 +168,10 @@ class ControllerGUI(tk.Tk):
             return
 
         # Si demandé, enchaîner horaires après flags
-        if self.run_horaires and "détection de mots suspects" in selected:
-            selected.append("horaires")
+        if self.run_horaires and "Détection de mots suspects" in selected:
+            for addon in ("horaires", "tel-mail"):
+                if addon not in selected:
+                    selected.append(addon)
 
         # Lancement en threads
         self.set_widget_state(self, 'disabled')
@@ -162,10 +231,12 @@ class ControllerGUI(tk.Tk):
         txt.insert('1.0', ", ".join(current))
 
         var = tk.BooleanVar(value=self.run_horaires)
-        ttk.Checkbutton(win,
-            text="Après détection, exécuter 'horaires.py'",
+        chk = ttk.Checkbutton(win,
+            text="Horaires - Téléphone - Adresses-emails",
             variable=var
-        ).pack(anchor='w', padx=10, pady=(0,10))
+        )
+        chk.pack(anchor='w', padx=10, pady=(0,10))
+        ToolTip(chk, "Activer l'extraction automatique des horaires, numéros de téléphone et adresses email")
 
         frm = ttk.Frame(win)
         frm.pack(fill='x', pady=10)
@@ -206,6 +277,31 @@ class ControllerGUI(tk.Tk):
             pass
         for c in widget.winfo_children():
             self.set_widget_state(c, state)
+            
+    def show_info(self):
+        win = tk.Toplevel(self)
+        win.title("Informations sur les programmes")
+        win.geometry("800x500")
+        win.transient(self)
+
+        txt = tk.Text(win, wrap='word', state='normal')
+        txt.pack(fill='both', expand=True, padx=10, pady=10)
+
+        # 🔽 Lecture du fichier de descriptions
+        desc_path = os.path.join(os.path.dirname(__file__), "fichiers_csv/descriptions.txt")
+        print("Chargement du fichier descriptions depuis :", desc_path)  # pour debug
+
+        try:
+            with open(desc_path, 'r', encoding='utf-8') as f:
+                for line in f:
+                    txt.insert(tk.END, line)
+
+        except Exception as e:
+            txt.insert(tk.END, f"[Erreur lecture fichier descriptions.txt] {e}\n\n")
+
+        txt.configure(state='disabled')
+
+
 
 if __name__ == '__main__':
     app = ControllerGUI()

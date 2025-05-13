@@ -1,0 +1,48 @@
+Note : Le score FALC (Facile à Lire et à Comprendre) avancé commence à 100 et diminue selon plusieurs critères de complexité :
+  🔸 Longueur moyenne des phrases :
+      - Si > 15 mots : chaque mot au-delà retire 2 points.
+  🔸 Mots rares (peu fréquents en français courant) :
+      - Chaque mot rare détecté enlève l'équivalent de 200 points répartis proportionnellement (ratio sur le total des mots).
+  🔸 Voix passive :
+      - Chaque phrase passive détectée enlève jusqu'à 50 points (répartis en fonction du nombre de phrases).
+  🔸 Subordonnées (ex. : « parce que », « qui », « lorsque ») :
+      - Chaque subordonnée identifiée enlève jusqu'à 50 points (également répartis).
+Le score final est compris entre 0 et 100. Un texte simple, direct, sans subordonnées ni vocabulaire rare, aura un score élevé.
+
+
+Correction (llm) : Corrige le texte avec un modèle de langage.
+
+
+Correction sans llm : Corrige automatiquement sans intelligence artificielle.
+
+
+Réécriture (llm) : Reformule les phrases du texte.
+
+
+Classification (llm): Attribue un service
+Environ 70 000 tokens pour analyser 1000 services.
+
+
+Détection de mots suspects : Repère les termes potentiellement problématiques.
+
+
+
+🔒 Limites du modèle utilisé (llama-3.3-70b) :
+
+  📥 Requêtes :
+    - Par minute : 30
+    - Par heure  : 900
+    - Par jour   : 14400
+
+  🔤 Jetons (tokens) :
+    - Par minute : 60,000
+    - Par heure  : 1,000,000
+    - Par jour   : 1,000,000
+
+
+---
+⚙️ Infrastructure technique :
+Ce programme utilise les modèles LLaMA exécutés via Cerebras AI,
+fournisseur de matériel et de services pour l’inférence à grande échelle.
+
+

@@ -1,4 +1,0 @@
-place_name,sentence_number,sentence,type,texte_fautif,suggestion
-Le Refuge de Pantin,1,"Le Refuge a pour mission d'accueillir, d'héberger, d'accompagner en contribuant au renforcement, pour chacun, de la confiance en soi et de l’aptitude à côtoyer les autres dans la capacité d’agir et de vivre des moments d’apaisement.",Erreur API,,'NoneType' object is not subscriptable
-Le Refuge de Pantin,2,"Le Refuge dispose d'un accueil de jour, d'une pension de famille et et d'un centre d'hébergement d'urgence.",Erreur API,,'NoneType' object is not subscriptable
-Le Refuge de Pantin,3,L'accueil de jour est ouvert uniquement aux femmes le mardi après-midi.,Erreur API,,'NoneType' object is not subscriptable

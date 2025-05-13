@@ -1,11 +1,16 @@
-from openai import OpenAI
-import pandas as pd
-import time
-from bs4 import BeautifulSoup
-import json
-import spacy
 import sys
+import time
+import json
+import ast
+import pandas as pd
+from bs4 import BeautifulSoup
+from cerebras.cloud.sdk import Cerebras
 
+# --- Configuration des fichiers ---
+INPUT_CSV  = "input/soliguide_v2.csv"
+OUTPUT_CSV = "output/correction_1.csv"
+
+# --- Encodage UTF-8 sur stdout/stderr ---
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
@@ -14,112 +19,110 @@ else:
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
-# Charger le modèle spaCy français
-nlp = spacy.load("fr_core_news_sm")
+# --- Lecture et dé-duplication du CSV d'entrée ---
+df = pd.read_csv(INPUT_CSV, delimiter=";", encoding='latin1')
+df_unique = df.drop_duplicates(subset="place_id").reset_index(drop=True)
 
-# Charger le fichier CSV
-df = pd.read_csv("soliguide.csv", delimiter=";")
-df_unique = df.drop_duplicates(subset="place_id")
+# --- Limitation du nombre de lignes (paramètre optionnel) ---
+try:
+    n_rows = int(sys.argv[1])
+    if n_rows > 0:
+        df_unique = df_unique.head(n_rows)
+except (IndexError, ValueError):
+    pass
 
+# --- Initialisation du client Cerebras ---
+client = Cerebras(api_key="")
 
-
-# Initialiser le client OpenRouter
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=""
+# --- Prompt système amélioré ---
+system_prompt = (
+    "Tu es un correcteur orthographique professionnel. Pour chaque description complète, détecte uniquement "
+    "les fragments contenant une faute (orthographe, accord, conjugaison ou répétition). "
+    "Pour chaque fragment fautif, indique également l’erreur commise de manière concise.\n"
+    "Réponds STRICTEMENT au format JSON suivant :\n"
+    "{\n"
+    "  \"erreurs\": [\n"
+    "    {\"texte\": \"fragment_fautif1\", \"explication\": \"explication de l'erreur\"},\n"
+    "    {\"texte\": \"fragment_fautif2\", \"explication\": \"explication de l'erreur\"}\n"
+    "  ]\n"
+    "}\n"
+    "Si aucune erreur n'est détectée, réponds : {\"erreurs\":[]}"
 )
 
-# Prompt système pour obtenir une réponse JSON structurée
-system_prompt = ("""
-    Tu es un correcteur orthographique professionnel. Pour chaque phrase, détecte uniquement les fautes d’orthographe, les erreurs d’accord, les erreurs de conjugaison et les répétitions de mots. Ne signale aucune autre faute. Réponds uniquement au format JSON, sous la forme :
-{"erreurs": [
-  {"type": "orthographe", "texte": "[...]", "suggestion": "[...]"},
-  {"type": "accord", "texte": "[...]", "suggestion": "[...]"},
-  {"type": "conjugaison", "texte": "[...]", "suggestion": "[...]"},
-  {"type": "répétition", "texte": "[...]", "suggestion": "[...]"}
-]}
-Si aucune erreur n'est détectée, réponds : {"erreurs": []}"""
-
-)
-
+# --- Traitement des descriptions ---
+start_time = time.time()
 results = []
 
-# Traiter chaque ligne du CSV
-for index, row in df_unique.head(1).iterrows():
-    place_name = row["place_name"] if "place_name" in row else f"Place_{index}"
-    description = row.get("place_description", "")
-    
-    # Nettoyer le texte du HTML
-    text = BeautifulSoup(str(description), "html.parser").get_text()
-    
-    # Découper le texte en phrases avec spaCy
-    doc = nlp(text)
-    sentences = [sent.text.strip() for sent in doc.sents if sent.text.strip()]
-    
-    # Pour chaque phrase, appeler le LLM
-    for i, sentence in enumerate(sentences, start=1):
+for index, row in df_unique.iterrows():
+    place_name = row.get("place_name", f"Place_{index}")
+    raw_html = row.get("description", "")
+
+    # Nettoyage HTML → texte brut
+    description = BeautifulSoup(str(raw_html), "html.parser").get_text(separator=" ").strip()
+
+    try:
+        comp = client.chat.completions.create(
+            model="llama-3.3-70b",
+            temperature=0,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": description}
+            ]
+        )
+        raw = comp.choices[0].message.content.strip()
+
+        # Parsing JSON strict puis fallback
         try:
-            completion = client.chat.completions.create(
-                model="meta-llama/llama-3.3-70b-instruct:free",
-                temperature=0,
-                extra_headers={
-                    "HTTP-Referer": "https://ton-site.com",
-                    "X-Title": "Correcteur orthographe"
-                },
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": sentence}
-                ]
-            )
-            print(f"🔄 Phrase {i} analysée")
-            
-            raw_response = completion.choices[0].message.content.strip()
+            data = json.loads(raw)
+        except json.JSONDecodeError:
             try:
-                json_data = json.loads(raw_response)
-                erreurs = json_data.get("erreurs", [])
-                
-                # S'il n'y a pas d'erreur, on ajoute une ligne avec "Pas d'erreur"
-                if not erreurs:
-                    results.append({
-                        "place_name": place_name,
-                        "sentence_number": i,
-                        "sentence": sentence,
-                        "type": "",
-                        "texte_fautif": "",
-                        "suggestion": "Pas d'erreur"
-                    })
-                else:
-                    # Pour chaque faute détectée dans la phrase, ajouter une ligne
-                    for err in erreurs:
-                        results.append({
-                            "place_name": place_name,
-                            "sentence_number": i,
-                            "sentence": sentence,
-                            "type": err.get("type", ""),
-                            "texte_fautif": err.get("texte", ""),
-                            "suggestion": err.get("suggestion", "")
-                        })
-            except json.JSONDecodeError:
-                results.append({
-                    "place_name": place_name,
-                    "sentence_number": i,
-                    "sentence": sentence,
-                    "type": "",
-                    "texte_fautif": "",
-                    "suggestion": f"Réponse non JSON : {raw_response}"
-                })
-        except Exception as e:
+                data = ast.literal_eval(raw)
+            except Exception:
+                data = {"erreurs": None}
+
+        erreurs = data.get("erreurs") if isinstance(data, dict) else None
+
+        if erreurs is None:
             results.append({
                 "place_name": place_name,
-                "sentence_number": i,
-                "sentence": sentence,
-                "type": "Erreur API",
-                "texte_fautif": "",
-                "suggestion": str(e)
+                "texte_fautif": f"JSON invalide: {raw}",
+                "explication": ""
             })
-        time.sleep(1)  # Attendre 1 seconde entre les requêtes pour éviter le throttling
+        elif not erreurs:
+            results.append({
+                "place_name": place_name,
+                "texte_fautif": "",
+                "explication": ""
+            })
+        elif isinstance(erreurs, list) and isinstance(erreurs[0], dict):
+            for item in erreurs:
+                results.append({
+                    "place_name": place_name,
+                    "texte_fautif": item.get("texte", ""),
+                    "explication": item.get("explication", "")
+                })
+        else:
+            for fragment in erreurs:
+                results.append({
+                    "place_name": place_name,
+                    "texte_fautif": fragment,
+                    "explication": "(explication manquante)"
+                })
 
-# Créer la DataFrame et l'enregistrer en CSV
-df_results = pd.DataFrame(results)
-df_results.to_csv("correction_1.csv", sep=",", index=False, encoding="utf-8")
-print("✅ Fichier 'correction_1.csv' généré avec succès.")
+    except Exception as e:
+        results.append({
+            "place_name": place_name,
+            "texte_fautif": f"ERREUR API: {e}",
+            "explication": ""
+        })
+
+    # Pause pour limiter le risque de throttling
+    time.sleep(2)
+
+# --- Export CSV final ---
+print(f"Export vers '{OUTPUT_CSV}'...")
+df_results = pd.DataFrame(results, columns=["place_name", "texte_fautif", "explication"])
+df_results.to_csv(OUTPUT_CSV, index=False, encoding="utf-8-sig")
+
+elapsed = time.time() - start_time
+print(f"Terminé en {elapsed:.2f}s, fichier généré : '{OUTPUT_CSV}'")
